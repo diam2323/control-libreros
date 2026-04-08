@@ -599,5 +599,32 @@ rendAC();
 
   window.loginDemo = loginDemo
 </script>
+ <script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+  const supabaseUrl = 'https://dxmfehyqwgffgaaysxye.supabase.co'
+  const supabaseKey = 'sb_publishable_UjVqd3E9lyPZmIkJ2gyLvw_x3ib8-I_'
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
+  window.supabase = supabase
+
+  async function loginDemo(email, password) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+
+    if (error) {
+      alert('Error al iniciar sesión: ' + error.message)
+      return null
+    }
+
+    alert('Sesión iniciada correctamente')
+    return data
+  }
+
+  window.loginDemo = loginDemo
+</script>
+ 
 </body>
 </html>
