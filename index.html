@@ -573,6 +573,7 @@ rendCum();
 refreshCal();
 rendAC();
 </script>
+ 
  <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
@@ -598,32 +599,106 @@ rendAC();
   }
 
   window.loginDemo = loginDemo
-</script>
- <script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  function formatDateMX(value) {
+  if (!value) return '';
+  const d = new Date(value + 'T00:00:00');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
 
-  const supabaseUrl = 'https://dxmfehyqwgffgaaysxye.supabase.co'
-  const supabaseKey = 'sb_publishable_UjVqd3E9lyPZmIkJ2gyLvw_x3ib8-I_'
-  const supabase = createClient(supabaseUrl, supabaseKey)
+async function cargarRegistroCumplimientoWeb() {
+  const { data, error } = await supabase
+    .from('registro_cumplimiento_web')
+    .select('*')
+    .order('created_at', { ascending: true });
 
-  window.supabase = supabase
-
-  async function loginDemo(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
-
-    if (error) {
-      alert('Error al iniciar sesión: ' + error.message)
-      return null
-    }
-
-    alert('Sesión iniciada correctamente')
-    return data
+  if (error) {
+    alert('Error al cargar Registro de Cumplimiento: ' + error.message);
+    return;
   }
 
-  window.loginDemo = loginDemo
+  if (Array.isArray(data) && data.length > 0) {
+    cumData = data.map((r, i) => ({
+      id: r.codigo || `LB-${String(i + 1).padStart(2, '0')}`,
+      fecha: formatDateMX(r.fecha),
+      area: r.area_proceso || '',
+      norma: r.requisito_norma || '',
+      resp: r.responsable || '',
+      prog: Number(r.programado || 0),
+      cump: Number(r.cumplido || 0),
+      estado: r.estado || 'Pendiente',
+      prior: r.prioridad || 'Media',
+      obs: r.observaciones || ''
+    }));
+  }
+}
+
+async function cargarInspeccionCalidadWeb() {
+  const { data, error } = await supabase
+    .from('inspeccion_calidad_web')
+    .select('*')
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    alert('Error al cargar Inspección de Calidad: ' + error.message);
+    return;
+  }
+
+  if (Array.isArray(data) && data.length > 0) {
+    calData = data.map((r) => ({
+      lote: r.lote || '',
+      prod: r.producto || '',
+      fecha: formatDateMX(r.fecha_inspeccion),
+      insp: r.inspector || '',
+      total: Number(r.total || 0),
+      ok: Number(r.aprobadas || 0),
+      rec: Number(r.rechazo || 0),
+      defecto: r.defecto_principal || '',
+      accion: r.accion_correctiva || ''
+    }));
+  }
+}
+
+async function cargarAccionesCorrectivasWeb() {
+  const { data, error } = await supabase
+    .from('acciones_correctivas_web')
+    .select('*')
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    alert('Error al cargar Acciones Correctivas: ' + error.message);
+    return;
+  }
+
+  if (Array.isArray(data) && data.length > 0) {
+    acData = data.map((r, i) => ({
+      id: r.codigo || `AC-${String(i + 1).padStart(2, '0')}`,
+      area: r.area || '',
+      causa: r.causa_raiz || '',
+      acc: r.accion_correctiva || '',
+      resp: r.responsable || '',
+      fecha: formatDateMX(r.fecha_compromiso),
+      estado: r.estado || 'Pendiente'
+    }));
+  }
+}
+
+async function sincronizarDesdeSupabase() {
+  await cargarRegistroCumplimientoWeb();
+  await cargarInspeccionCalidadWeb();
+  await cargarAccionesCorrectivasWeb();
+
+  if (typeof refreshAll === 'function') refreshAll();
+  if (typeof rendCum === 'function') rendCum();
+  if (typeof refreshCal === 'function') refreshCal();
+  if (typeof rendCal === 'function') rendCal();
+  if (typeof rendAC === 'function') rendAC();
+}
+
+window.sincronizarDesdeSupabase = sincronizarDesdeSupabase;
+sincronizarDesdeSupabase();
 </script>
  
 </body>
