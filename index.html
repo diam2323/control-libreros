@@ -410,12 +410,35 @@ function rendCum() {
   </tr>`;
 }
 
-function addCumRow() {
+async function addCumRow() {
   const today = new Date().toISOString().split('T')[0];
-  const next  = 'LB-' + String(cumData.length + 1).padStart(2,'0');
-  cumData.push({id:next, fecha:today, area:'', norma:'', resp:'', prog:0, cump:0, estado:'Pendiente', prior:'Media', obs:''});
-  rendCum();
-  refreshAll();
+  const next = 'LB-' + String(cumData.length + 1).padStart(2, '0');
+
+  const nuevoRegistro = {
+    codigo: next,
+    fecha: today,
+    area_proceso: '',
+    requisito_norma: '',
+    responsable: '',
+    programado: 0,
+    cumplido: 0,
+    diferencia: 0,
+    productividad: 0,
+    estado: 'Pendiente',
+    prioridad: 'Media',
+    observaciones: ''
+  };
+
+  const { error } = await supabase
+    .from('registro_cumplimiento_web')
+    .insert([nuevoRegistro]);
+
+  if (error) {
+    alert('Error al guardar el nuevo registro: ' + error.message);
+    return;
+  }
+
+  await sincronizarDesdeSupabase();
   toast();
 }
 
