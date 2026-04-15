@@ -365,13 +365,13 @@ function rendCum() {
       <td style="font-weight:700;color:var(--azul2);white-space:nowrap">${r.id}</td>
       <td>
         <input class="editable-input" type="date" value="${r.fecha}" style="width:128px"
-          onchange="cumData[${i}].fecha=this.value;rendCum();refreshAll()">
+          onchange="cumData[${i}].fecha=this.value;saveCumRow(${i});rendCum();refreshAll()">
       </td>
-      <td>${inp(r.area,  `cumData[${i}].area=this.value`,  '118px')}</td>
-      <td>${inp(r.norma, `cumData[${i}].norma=this.value`, '148px')}</td>
-      <td>${inp(r.resp,  `cumData[${i}].resp=this.value`,  '100px')}</td>
-      <td style="text-align:center;border-left:2px solid #d0dce8">${numInp(r.prog, `cumData[${i}].prog=+this.value;rendCum();refreshAll()`)}</td>
-      <td style="text-align:center">${numInp(r.cump, `cumData[${i}].cump=+this.value;rendCum();refreshAll()`)}</td>
+      <td>${inp(r.area,  `cumData[${i}].area=this.value;saveCumRow(${i})`,  '118px')}</td>
+      <td>${inp(r.norma, `cumData[${i}].norma=this.value;saveCumRow(${i})`, '148px')}</td>
+      <td>${inp(r.resp,  `cumData[${i}].resp=this.value`;saveCumRow(${i}),  '100px')}</td>
+      <td style="text-align:center;border-left:2px solid #d0dce8">${numInp(r.prog, `cumData[${i}].prog=+this.value;saveCumRow(${i});rendCum();refreshAll()`)}</td>
+      <td style="text-align:center">${numInp(r.cump, `cumData[${i}].cump=+this.value;saveCumRow(${i});rendCum();refreshAll()`)}</td>
       <td style="text-align:center"><span class="${difCls}">${difTxt}</span></td>
       <td>
         <div class="prod-bar">
@@ -380,9 +380,9 @@ function rendCum() {
         </div>
       </td>
       <td>${sel(r.estado, ['Cumplido','En proceso','Pendiente','No aplica'],
-            `cumData[${i}].estado=this.value;this.closest('tr').dataset.estado=this.value;refreshAll()`)}</td>
-      <td>${sel(r.prior, ['Alta','Media','Baja'], `cumData[${i}].prior=this.value`)}</td>
-      <td>${inp(r.obs, `cumData[${i}].obs=this.value`, '138px')}</td>
+            `cumData[${i}].estado=this.value;this.closest('tr').dataset.estado=this.value;refreshAll();saveCumRow(${i})`)}</td>
+      <td>${sel(r.prior, ['Alta','Media','Baja'], `cumData[${i}].prior=this.value;saveCumRow(${i})`)}</td>
+      <td>${inp(r.obs, `cumData[${i}].obs=this.value;saveCumRow(${i})`, '138px')}</td>
       <td><button class="del-btn" onclick="cumData.splice(${i},1);rendCum();refreshAll()">✕</button></td>
     </tr>`;
   }).join('');
@@ -411,6 +411,35 @@ function rendCum() {
 }
 
 async function addCumRow() {
+ async function saveCumRow(i) {
+  const r = cumData[i];
+
+  const payload = {
+    fecha: r.fecha || '',
+    area_proceso: r.area || '',
+    requisito_norma: r.norma || '',
+    responsable: r.resp || '',
+    programado: Number(r.prog || 0),
+    cumplido: Number(r.cump || 0),
+    diferencia: Number(r.cump || 0) - Number(r.prog || 0),
+    productividad: Number(parseFloat(calcProd(r)) || 0),
+    estado: r.estado || 'Pendiente',
+    prioridad: r.prior || 'Media',
+    observaciones: r.obs || ''
+  };
+
+  const { error } = await supabase
+    .from('registro_cumplimiento_web')
+    .update(payload)
+    .eq('codigo', r.id);
+
+  if (error) {
+    alert('Error al guardar cambios del registro: ' + error.message);
+    return;
+  }
+}
+
+window.saveCumRow = saveCumRow;
   const today = new Date().toISOString().split('T')[0];
   const next = 'LB-' + String(cumData.length + 1).padStart(2, '0');
 
